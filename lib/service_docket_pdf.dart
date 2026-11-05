@@ -1,4 +1,3 @@
-
 import 'dart:typed_data';
 import 'dart:ui' show Offset;
 
@@ -23,52 +22,31 @@ Future<Uint8List> buildServiceDocketPdf(
   const housekeepingKey = 'Housekeeping';
 
   final checklistSections = <_ChecklistSection>[
-    _ChecklistSection(
-      'Every Two Months',
-      ledKey,
-      [
-        'LED Display / LCD Panel & Equipment',
-        'Inspect LED display / LCD panels for any faulty display and rectify. Replace faulty parts if necessary.',
-        'Check brightness / contrast within the setting range.',
-        'Check cooling fan / ventilation fan blade for functionality.',
-        'Check functionality of light sensor.',
-        'Check DC power supply voltage level and function.',
-        'Check temperature and humidity inside the screen.',
-        'Reboot and rotate spare module for testing purpose.',
-      ],
-    ),
-    _ChecklistSection(
-      'Control System',
-      controlKey,
-      [
-        'Check the CCTV / Web cam is functioning properly.',
-        'Inspect the sending card / receiving card function.',
-        'Check the system timer and ON / OFF function.',
-        'Check internet connectivity and modem connection.',
-        'Reboot control system and backup system data file.',
-      ],
-    ),
-    _ChecklistSection(
-      'Electrical System',
-      electricalKey,
-      [
-        'Inspect and check lighting fixture function properly. Replace if necessary.',
-      ],
-    ),
-    _ChecklistSection(
-      'Aircond System',
-      aircondKey,
-      [
-        'Check air-conditioner units function properly and record temperature.',
-      ],
-    ),
-    _ChecklistSection(
-      'Housekeeping',
-      housekeepingKey,
-      [
-        'Perform general cleaning and dust off control room equipment.',
-      ],
-    ),
+    _ChecklistSection('Every Two Months', ledKey, [
+        'Inspect LED Display / LCD panels for faulty displays and rectify. Replace faulty parts if necessary.',
+        'Inspect display brightness and contrast are within the setting range.',
+        'Check cooling fan / ventilation fan blades function properly. Replace if necessary.',
+        'Check light sensor functionality. Clean the sensor surface if necessary.',
+        'Check DC power supply voltage level for health and function. Record 2 random voltage readings.',
+        'Check temperature and humidity inside the screen. Record the highest and lowest readings.',
+        'To Replace and rotate spare modules for light-up ageing purposes.',
+    ]),
+    _ChecklistSection('Control System', controlKey, [
+        'Check that the CCTV / webcam is functioning properly.',
+        'Inspect that the sending card / receiving card is functioning properly.',
+        'Check the system timer auto ON / OFF function against the preset timing.',
+        'Check internet connectivity, reboot the modem, and ensure the connection works.',
+        'Reboot the control system and back up system data files.',
+    ]),
+    _ChecklistSection('Electrical System', electricalKey, [
+      'Inspect and check lighting fixture function properly. Replace if necessary.',
+    ]),
+    _ChecklistSection('Aircond System', aircondKey, [
+      'Check air-conditioner units function properly and record temperature.',
+    ]),
+    _ChecklistSection('Housekeeping', housekeepingKey, [
+      'Perform general cleaning and dust off control room equipment.',
+    ]),
   ];
 
   pdf.addPage(
@@ -107,24 +85,15 @@ Future<Uint8List> buildServiceDocketPdf(
               children: [
                 smallLabel('Job Site'),
                 pw.SizedBox(width: 4),
-                pw.Expanded(
-                  flex: 4,
-                  child: inputBox(record.jobSite),
-                ),
+                pw.Expanded(flex: 4, child: inputBox(record.jobSite)),
                 pw.SizedBox(width: 8),
                 smallLabel('Time In'),
                 pw.SizedBox(width: 4),
-                pw.Expanded(
-                  flex: 2,
-                  child: inputBox(record.timeIn),
-                ),
+                pw.Expanded(flex: 2, child: inputBox(record.timeIn)),
                 pw.SizedBox(width: 8),
                 smallLabel('Time Out'),
                 pw.SizedBox(width: 4),
-                pw.Expanded(
-                  flex: 2,
-                  child: inputBox(record.timeOut),
-                ),
+                pw.Expanded(flex: 2, child: inputBox(record.timeOut)),
               ],
             ),
 
@@ -135,34 +104,46 @@ Future<Uint8List> buildServiceDocketPdf(
               children: [
                 smallLabel('Type Of Service'),
                 pw.SizedBox(width: 5),
-                serviceOption(
-                  'Scheduled Maintenance',
-                  _serviceTypeMatches(
-                    record.serviceType,
-                    'Scheduled Maintenance',
+
+                pw.Expanded(
+                  flex: 6,
+                  child: pw.Row(
+                    children: [
+                      serviceOption(
+                        'Scheduled Maintenance',
+                        _serviceTypeMatches(
+                          record.serviceType,
+                          'Scheduled Maintenance',
+                        ),
+                      ),
+                      serviceOption(
+                        'Technical Support',
+                        _serviceTypeMatches(
+                          record.serviceType,
+                          'Technical Support',
+                        ),
+                      ),
+                      serviceOption(
+                        'Emergency Support',
+                        _serviceTypeMatches(
+                          record.serviceType,
+                          'Emergency Support',
+                        ),
+                      ),
+                      serviceOption(
+                        'Others',
+                        _serviceTypeMatches(record.serviceType, 'Others'),
+                      ),
+                    ],
                   ),
                 ),
-                serviceOption(
-                  'Technical Support',
-                  _serviceTypeMatches(
-                    record.serviceType,
-                    'Technical Support',
-                  ),
-                ),
-                serviceOption(
-                  'Emergency Support',
-                  _serviceTypeMatches(
-                    record.serviceType,
-                    'Emergency Support',
-                  ),
-                ),
-                serviceOption(
-                  'Others',
-                  _serviceTypeMatches(
-                    record.serviceType,
-                    'Others',
-                  ),
-                ),
+
+                pw.SizedBox(width: 8),
+
+                smallLabel('Location'),
+                pw.SizedBox(width: 4),
+
+                pw.Expanded(flex: 3, child: inputBox(record.location)),
               ],
             ),
 
@@ -184,9 +165,7 @@ Future<Uint8List> buildServiceDocketPdf(
                         ...checklistSections.map((section) {
                           return maintenanceSection(
                             section,
-                            record.maintenanceChecklist[
-                                  section.recordKey
-                                ] ??
+                            record.maintenanceChecklist[section.recordKey] ??
                                 const [],
                           );
                         }),
@@ -210,10 +189,7 @@ Future<Uint8List> buildServiceDocketPdf(
                               labelRow('Technician Name:'),
                               ...List.generate(
                                 7,
-                                (i) => numberedRow(
-                                  i + 1,
-                                  record.technicalTeam,
-                                ),
+                                (i) => numberedRow(i + 1, record.technicalTeam),
                               ),
                             ],
                           ),
@@ -230,10 +206,7 @@ Future<Uint8List> buildServiceDocketPdf(
                               labelRow('IT Support Name:'),
                               ...List.generate(
                                 4,
-                                (i) => numberedRow(
-                                  i + 1,
-                                  record.itTeam,
-                                ),
+                                (i) => numberedRow(i + 1, record.itTeam),
                               ),
                             ],
                           ),
@@ -246,24 +219,12 @@ Future<Uint8List> buildServiceDocketPdf(
                         fixedSection(
                           'Customer',
                           pw.Column(
-                            crossAxisAlignment:
-                                pw.CrossAxisAlignment.stretch,
+                            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
                             children: [
-                              labelRow('Company & Chop'),
-                              // Company stamp / chop area.
-                              pw.Container(
-                                height: 43,
-                                width: double.infinity,
-                                alignment: pw.Alignment.topLeft,
-                                padding: const pw.EdgeInsets.all(3),
-                                child: pw.Text(
-                                  record.companyName,
-                                  style: const pw.TextStyle(fontSize: 6),
-                                ),
-                              ),
+                              // CUSTOMER NAME
                               labelRow('Customer Name:'),
                               pw.Container(
-                                height: 21,
+                                height: 35,
                                 width: double.infinity,
                                 alignment: pw.Alignment.centerLeft,
                                 padding: const pw.EdgeInsets.symmetric(
@@ -278,17 +239,21 @@ Future<Uint8List> buildServiceDocketPdf(
                                   style: const pw.TextStyle(fontSize: 7),
                                 ),
                               ),
+
+                              // CUSTOMER SIGNATURE
                               labelRow('Customer Signature:'),
                               pw.Container(
-                                height: 48,
+                                height: 95,
                                 width: double.infinity,
                                 alignment: pw.Alignment.center,
                                 padding: const pw.EdgeInsets.all(2),
                                 child: _signatureWidget(record.signaturePoints),
                               ),
+
+                              // DATE
                               labelRow('Date:'),
                               pw.Container(
-                                height: 17,
+                                height: 25,
                                 width: double.infinity,
                                 alignment: pw.Alignment.centerLeft,
                                 padding: const pw.EdgeInsets.symmetric(
@@ -296,8 +261,7 @@ Future<Uint8List> buildServiceDocketPdf(
                                 ),
                                 child: pw.Text(
                                   _date(
-                                    record.signatureDate ??
-                                        record.serviceDate,
+                                    record.signatureDate ?? record.serviceDate,
                                   ),
                                   style: const pw.TextStyle(fontSize: 6),
                                 ),
@@ -309,19 +273,15 @@ Future<Uint8List> buildServiceDocketPdf(
 
                         pw.SizedBox(height: 4),
 
+                        pw.SizedBox(height: 4),
+
                         // VOLTAGE
                         fixedSection(
                           'Screen Power Supply Voltage',
                           pw.Column(
                             children: [
-                              voltageRow(
-                                '1st reading',
-                                record.voltageReading1,
-                              ),
-                              voltageRow(
-                                '2nd reading',
-                                record.voltageReading2,
-                              ),
+                              voltageRow('1st reading', record.voltageReading1),
+                              voltageRow('2nd reading', record.voltageReading2),
                             ],
                           ),
                           110,
@@ -397,7 +357,6 @@ Future<Uint8List> buildServiceDocketPdf(
     ),
   );
 
-
   // Additional maintenance photo pages. The original service docket page
   // above remains unchanged and is always the first page.
   if (record.maintenancePhotos.isNotEmpty) {
@@ -427,10 +386,7 @@ Future<Uint8List> buildServiceDocketPdf(
               ),
               pw.SizedBox(height: 6),
               pw.Expanded(
-                child: pw.Image(
-                  pw.MemoryImage(bytes),
-                  fit: pw.BoxFit.contain,
-                ),
+                child: pw.Image(pw.MemoryImage(bytes), fit: pw.BoxFit.contain),
               ),
             ],
           ),
@@ -492,11 +448,7 @@ class _ChecklistSection {
   final String recordKey;
   final List<String> items;
 
-  const _ChecklistSection(
-    this.title,
-    this.recordKey,
-    this.items,
-  );
+  const _ChecklistSection(this.title, this.recordKey, this.items);
 }
 
 // ======================================================
@@ -526,10 +478,7 @@ bool _serviceTypeMatches(String selected, String label) {
 // ======================================================
 
 pw.Widget smallLabel(String text) {
-  return pw.Text(
-    text,
-    style: const pw.TextStyle(fontSize: 6.5),
-  );
+  return pw.Text(text, style: const pw.TextStyle(fontSize: 6.5));
 }
 
 // ======================================================
@@ -541,13 +490,8 @@ pw.Widget inputBox(String value) {
     height: 19,
     padding: const pw.EdgeInsets.symmetric(horizontal: 3),
     alignment: pw.Alignment.centerLeft,
-    decoration: pw.BoxDecoration(
-      border: pw.Border.all(width: 0.6),
-    ),
-    child: pw.Text(
-      value,
-      style: const pw.TextStyle(fontSize: 7),
-    ),
+    decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.6)),
+    child: pw.Text(value, style: const pw.TextStyle(fontSize: 7)),
   );
 }
 
@@ -562,24 +506,16 @@ pw.Widget serviceOption(String title, bool checked) {
         pw.Container(
           width: 8,
           height: 8,
-          decoration: pw.BoxDecoration(
-            border: pw.Border.all(width: 0.6),
-          ),
+          decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.6)),
           child: checked
               ? pw.Center(
-                  child: pw.Text(
-                    'X',
-                    style: const pw.TextStyle(fontSize: 6),
-                  ),
+                  child: pw.Text('X', style: const pw.TextStyle(fontSize: 6)),
                 )
               : null,
         ),
         pw.SizedBox(width: 3),
         pw.Expanded(
-          child: pw.Text(
-            title,
-            style: const pw.TextStyle(fontSize: 5.5),
-          ),
+          child: pw.Text(title, style: const pw.TextStyle(fontSize: 5.5)),
         ),
       ],
     ),
@@ -595,15 +531,10 @@ pw.Widget sectionTitle(String title) {
     width: double.infinity,
     alignment: pw.Alignment.center,
     padding: const pw.EdgeInsets.all(3),
-    decoration: pw.BoxDecoration(
-      border: pw.Border.all(width: 0.7),
-    ),
+    decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.7)),
     child: pw.Text(
       title,
-      style: pw.TextStyle(
-        fontSize: 7,
-        fontWeight: pw.FontWeight.bold,
-      ),
+      style: pw.TextStyle(fontSize: 7, fontWeight: pw.FontWeight.bold),
     ),
   );
 }
@@ -616,29 +547,26 @@ pw.Widget maintenanceSection(
   _ChecklistSection section,
   List<bool> checkedItems,
 ) {
-  final isLedSection = section.recordKey ==
+  final isLedSection =
+      section.recordKey ==
       'Every Two Months LED Display / LCD Panel & Equipment';
 
   final subtitle = isLedSection ? section.items.first : '';
 
-  final items = isLedSection
-      ? section.items.skip(1).toList()
-      : section.items;
+  final items = isLedSection ? section.items.skip(1).toList() : section.items;
 
   final heights = isLedSection
       ? [34.0, 30.0, 38.0, 34.0, 40.0, 40.0, 32.0]
       : section.recordKey == 'Control System'
-          ? [30.0, 30.0, 40.0, 40.0, 30.0]
-          : section.recordKey == 'Electrical System'
-              ? [42.0]
-              : section.recordKey == 'Aircond System'
-                  ? [38.0]
-                  : [38.0];
+      ? [30.0, 30.0, 40.0, 40.0, 30.0]
+      : section.recordKey == 'Electrical System'
+      ? [42.0]
+      : section.recordKey == 'Aircond System'
+      ? [38.0]
+      : [38.0];
 
   final subtitleChecked =
-      isLedSection &&
-      checkedItems.isNotEmpty &&
-      checkedItems[0];
+      isLedSection && checkedItems.isNotEmpty && checkedItems[0];
 
   return pw.Column(
     children: [
@@ -647,9 +575,7 @@ pw.Widget maintenanceSection(
         width: double.infinity,
         alignment: pw.Alignment.center,
         padding: const pw.EdgeInsets.all(3),
-        decoration: pw.BoxDecoration(
-          border: pw.Border.all(width: 0.6),
-        ),
+        decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.6)),
         child: pw.Column(
           children: [
             pw.Text(
@@ -674,25 +600,16 @@ pw.Widget maintenanceSection(
 
       // SUBTITLE CHECKBOX
       // Preserves the original checklist's first LED item.
-      if (subtitle.isNotEmpty)
-        maintenanceRow(
-          subtitle,
-          subtitleChecked,
-          20,
-        ),
+      if (subtitle.isNotEmpty) maintenanceRow(subtitle, subtitleChecked, 20),
 
       // MAINTENANCE CHECKLIST ITEMS
       ...List.generate(items.length, (i) {
         final selectedIndex = isLedSection ? i + 1 : i;
 
-        final checked = selectedIndex < checkedItems.length &&
-            checkedItems[selectedIndex];
+        final checked =
+            selectedIndex < checkedItems.length && checkedItems[selectedIndex];
 
-        return maintenanceRow(
-          items[i],
-          checked,
-          heights[i],
-        );
+        return maintenanceRow(items[i], checked, heights[i]);
       }),
     ],
   );
@@ -702,11 +619,7 @@ pw.Widget maintenanceSection(
 // MAINTENANCE ROW
 // ======================================================
 
-pw.Widget maintenanceRow(
-  String description,
-  bool checked,
-  double height,
-) {
+pw.Widget maintenanceRow(String description, bool checked, double height) {
   return pw.Container(
     height: height,
     decoration: pw.BoxDecoration(
@@ -724,9 +637,7 @@ pw.Widget maintenanceRow(
           height: double.infinity,
           alignment: pw.Alignment.center,
           decoration: const pw.BoxDecoration(
-            border: pw.Border(
-              right: pw.BorderSide(width: 0.6),
-            ),
+            border: pw.Border(right: pw.BorderSide(width: 0.6)),
           ),
           child: checked
               ? pw.Text(
@@ -758,17 +669,11 @@ pw.Widget maintenanceRow(
 // MIDDLE COLUMN SECTION
 // ======================================================
 
-pw.Widget fixedSection(
-  String title,
-  pw.Widget content,
-  double height,
-) {
+pw.Widget fixedSection(String title, pw.Widget content, double height) {
   return pw.Container(
     height: height,
     width: double.infinity,
-    decoration: pw.BoxDecoration(
-      border: pw.Border.all(width: 0.6),
-    ),
+    decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.6)),
     child: pw.Column(
       children: [
         pw.Container(
@@ -776,16 +681,11 @@ pw.Widget fixedSection(
           alignment: pw.Alignment.center,
           padding: const pw.EdgeInsets.all(4),
           decoration: const pw.BoxDecoration(
-            border: pw.Border(
-              bottom: pw.BorderSide(width: 0.6),
-            ),
+            border: pw.Border(bottom: pw.BorderSide(width: 0.6)),
           ),
           child: pw.Text(
             title,
-            style: pw.TextStyle(
-              fontSize: 6.5,
-              fontWeight: pw.FontWeight.bold,
-            ),
+            style: pw.TextStyle(fontSize: 6.5, fontWeight: pw.FontWeight.bold),
           ),
         ),
 
@@ -804,14 +704,9 @@ pw.Widget labelRow(String title) {
     width: double.infinity,
     padding: const pw.EdgeInsets.all(3),
     decoration: const pw.BoxDecoration(
-      border: pw.Border(
-        bottom: pw.BorderSide(width: 0.5),
-      ),
+      border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
     ),
-    child: pw.Text(
-      title,
-      style: const pw.TextStyle(fontSize: 5.5),
-    ),
+    child: pw.Text(title, style: const pw.TextStyle(fontSize: 5.5)),
   );
 }
 
@@ -819,13 +714,8 @@ pw.Widget labelRow(String title) {
 // NUMBERED TEAM ROW
 // ======================================================
 
-pw.Widget numberedRow(
-  int number,
-  List<String> names,
-) {
-  final name = number <= names.length
-      ? names[number - 1]
-      : '';
+pw.Widget numberedRow(int number, List<String> names) {
+  final name = number <= names.length ? names[number - 1] : '';
 
   return pw.Expanded(
     child: pw.Container(
@@ -833,9 +723,7 @@ pw.Widget numberedRow(
       padding: const pw.EdgeInsets.symmetric(horizontal: 3),
       alignment: pw.Alignment.centerLeft,
       decoration: const pw.BoxDecoration(
-        border: pw.Border(
-          bottom: pw.BorderSide(width: 0.5),
-        ),
+        border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
       ),
       child: pw.Text(
         '$number. ${name.isEmpty ? '' : name}',
@@ -856,9 +744,7 @@ pw.Widget voltageRow(String title, String value) {
       alignment: pw.Alignment.centerLeft,
       padding: const pw.EdgeInsets.all(4),
       decoration: const pw.BoxDecoration(
-        border: pw.Border(
-          bottom: pw.BorderSide(width: 0.5),
-        ),
+        border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -872,10 +758,7 @@ pw.Widget voltageRow(String title, String value) {
             ),
           ),
           pw.SizedBox(height: 3),
-          pw.Text(
-            value,
-            style: const pw.TextStyle(fontSize: 6),
-          ),
+          pw.Text(value, style: const pw.TextStyle(fontSize: 6)),
         ],
       ),
     ),
@@ -886,16 +769,11 @@ pw.Widget voltageRow(String title, String value) {
 // RIGHT COLUMN COMMENT SECTION
 // ======================================================
 
-pw.Widget commentSection(
-  String title,
-  String content,
-) {
+pw.Widget commentSection(String title, String content) {
   return pw.Expanded(
     child: pw.Container(
       width: double.infinity,
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(width: 0.6),
-      ),
+      decoration: pw.BoxDecoration(border: pw.Border.all(width: 0.6)),
       child: pw.Column(
         children: [
           pw.Container(
@@ -903,9 +781,7 @@ pw.Widget commentSection(
             padding: const pw.EdgeInsets.all(4),
             alignment: pw.Alignment.center,
             decoration: const pw.BoxDecoration(
-              border: pw.Border(
-                bottom: pw.BorderSide(width: 0.6),
-              ),
+              border: pw.Border(bottom: pw.BorderSide(width: 0.6)),
             ),
             child: pw.Text(
               title,
@@ -919,10 +795,7 @@ pw.Widget commentSection(
               width: double.infinity,
               padding: const pw.EdgeInsets.all(4),
               alignment: pw.Alignment.topLeft,
-              child: pw.Text(
-                content,
-                style: const pw.TextStyle(fontSize: 6),
-              ),
+              child: pw.Text(content, style: const pw.TextStyle(fontSize: 6)),
             ),
           ),
         ],
@@ -945,10 +818,7 @@ pw.Widget _signatureWidget(List<Offset?> points) {
     );
   }
 
-  return pw.SvgImage(
-    svg: svg,
-    fit: pw.BoxFit.contain,
-  );
+  return pw.SvgImage(svg: svg, fit: pw.BoxFit.contain);
 }
 
 /// Converts the captured Flutter signature strokes into an SVG image.

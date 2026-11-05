@@ -2676,6 +2676,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
+                
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -2683,7 +2684,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                             _currentStep == 5 ? 'Submit Docket' : 'Next',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
-                          const SizedBox(width: 8),
+                          const SizedBox(width: 6),
                           Icon(
                             _currentStep == 5
                                 ? Icons.check_circle_outline
@@ -2909,7 +2910,7 @@ class ProjectDetailsPage extends StatelessWidget {
         'Check light sensor functionality. Clean the sensor surface if necessary.',
         'Check DC power supply voltage level for health and function. Record 2 random voltage readings.',
         'Check temperature and humidity inside the screen. Record the highest and lowest readings.',
-        'Replace and rotate spare modules for light-up ageing purposes.',
+        'To Replace and rotate spare modules for light-up ageing purposes.',
       ],
       'Control System': [
         'Check that the CCTV / webcam is functioning properly.',

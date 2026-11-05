@@ -145,7 +145,7 @@ class ServiceStepHeader extends StatelessWidget {
                       textAlign: TextAlign.center,
                       maxLines: 2,
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: 8,
                         height: 1.2,
                         fontWeight: isActive
                             ? FontWeight.bold
