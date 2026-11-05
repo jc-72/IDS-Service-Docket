@@ -8,7 +8,7 @@ class ServiceStepHeader extends StatelessWidget {
   const ServiceStepHeader({
     super.key,
     required this.currentStep,
-    this.totalSteps = 5,
+    this.totalSteps = 6,
   }) : assert(currentStep >= 0 && currentStep < totalSteps);
 
   static const Color navy = Color(0xFF174A7E);
@@ -21,6 +21,7 @@ class ServiceStepHeader extends StatelessWidget {
     'Workers',
     'Maintenance',
     'Remarks',
+    'Photos',
     'Signature',
   ];
 
@@ -29,6 +30,7 @@ class ServiceStepHeader extends StatelessWidget {
     Icons.groups_outlined,
     Icons.build_outlined,
     Icons.chat_bubble_outline,
+    Icons.photo_library_outlined,
     Icons.draw_outlined,
   ];
 
@@ -48,7 +50,6 @@ class ServiceStepHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Page title and step counter
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -96,7 +97,7 @@ class ServiceStepHeader extends StatelessWidget {
 
           const SizedBox(height: 24),
 
-          // Five section icons
+          // Six section icons
           Row(
             children: List.generate(totalSteps, (index) {
               final isActive = index == currentStep;
@@ -105,14 +106,14 @@ class ServiceStepHeader extends StatelessWidget {
               final Color iconColor = isActive
                   ? Colors.white
                   : isCompleted
-                  ? completedGreen
-                  : muted;
+                      ? completedGreen
+                      : muted;
 
               final Color backgroundColor = isActive
                   ? navy
                   : isCompleted
-                  ? const Color(0xFFE2F3E9)
-                  : const Color(0xFFF1F3F6);
+                      ? const Color(0xFFE2F3E9)
+                      : const Color(0xFFF1F3F6);
 
               return Expanded(
                 child: Column(
@@ -125,9 +126,9 @@ class ServiceStepHeader extends StatelessWidget {
                         borderRadius: BorderRadius.circular(13),
                         border: isActive
                             ? Border.all(
-                          color: const Color(0xFF8BB8E5),
-                          width: 2,
-                        )
+                                color: const Color(0xFF8BB8E5),
+                                width: 2,
+                              )
                             : null,
                       ),
                       child: Icon(
@@ -146,13 +147,14 @@ class ServiceStepHeader extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 10,
                         height: 1.2,
-                        fontWeight:
-                        isActive ? FontWeight.bold : FontWeight.w500,
+                        fontWeight: isActive
+                            ? FontWeight.bold
+                            : FontWeight.w500,
                         color: isActive
                             ? navy
                             : isCompleted
-                            ? completedGreen
-                            : const Color(0xFF8994A2),
+                                ? completedGreen
+                                : const Color(0xFF8994A2),
                       ),
                     ),
                   ],
@@ -170,13 +172,14 @@ class ServiceStepHeader extends StatelessWidget {
               value: progress,
               minHeight: 5,
               backgroundColor: const Color(0xFFE9EDF2),
-              valueColor: const AlwaysStoppedAnimation<Color>(navy),
+              valueColor:
+                  const AlwaysStoppedAnimation<Color>(navy),
             ),
           ),
 
           const SizedBox(height: 14),
 
-          // Clearly identify the current section
+          // Current section
           Row(
             children: [
               const Icon(
@@ -196,7 +199,7 @@ class ServiceStepHeader extends StatelessWidget {
                 ),
               ),
               Text(
-                '${((progress) * 100).round()}%',
+                '${(progress * 100).round()}%',
                 style: const TextStyle(
                   fontSize: 12,
                   color: Color(0xFF788493),
@@ -209,4 +212,5 @@ class ServiceStepHeader extends StatelessWidget {
       ),
     );
   }
+
 }

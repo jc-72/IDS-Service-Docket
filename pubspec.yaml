@@ -18,6 +18,11 @@ dependencies:
   cupertino_icons: ^1.0.8
   flutter_map: ^7.0.2
   latlong2: ^0.9.1
+  image_picker: ^1.2.4
+  pdf: ^3.13.1
+  printing: ^5.15.1
+  path_provider: ^2.1.6  
+  http: ^1.5.0
 
 dev_dependencies:
   flutter_test:

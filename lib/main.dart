@@ -4,8 +4,15 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+import 'dart:typed_data';
+import 'package:image_picker/image_picker.dart';
+
 import 'service_step_header.dart';
+
 import 'package:local_auth/local_auth.dart';
+import 'package:printing/printing.dart';
+
+import 'service_docket_pdf.dart';
 
 // ============================================================
 // IDS SERVICE DOCKET
@@ -248,6 +255,7 @@ class ProjectRecord {
   final DateTime? signedAt;
   final DateTime? signatureDate;
   final bool serviceConfirmed;
+  final List<Uint8List> maintenancePhotos;
 
   ProjectRecord({
     this.jobSite = '',
@@ -284,7 +292,53 @@ class ProjectRecord {
     this.signedAt,
     this.signatureDate,
     this.serviceConfirmed = false,
+    this.maintenancePhotos = const [],
   });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'jobSite': jobSite,
+      'timeIn': timeIn,
+      'timeOut': timeOut,
+      'serviceType': serviceType,
+      'companyName': companyName,
+      'location': location,
+      'locationCoordinates': locationCoordinates,
+      'ledType': ledType,
+      'pixelPitch': pixelPitch,
+      'dimensions': dimensions,
+      'controller': controller,
+      'status': status,
+      'dateAdded': dateAdded.toIso8601String(),
+      'notes': notes,
+      'serviceDate': serviceDate?.toIso8601String(),
+      'technicalTeam': technicalTeam,
+      'itTeam': itTeam,
+      'maintenancePerformed': maintenancePerformed,
+      'partsReplaced': partsReplaced,
+      'serviceOutcome': serviceOutcome,
+      'maintenanceChecklist': maintenanceChecklist,
+      'voltageReading1': voltageReading1,
+      'voltageReading2': voltageReading2,
+      'observations': observations,
+      'outstandingIssues': outstandingIssues,
+      'recommendations': recommendations,
+      'technicalTeamOtherComment': technicalTeamOtherComment,
+      'itTeamOtherComment': itTeamOtherComment,
+      'clientName': clientName,
+      'signaturePoints': signaturePoints.map((point) {
+        if (point == null) return null;
+        return {'x': point.dx, 'y': point.dy};
+      }).toList(),
+      'signedAt': signedAt?.toIso8601String(),
+      'signatureDate': signatureDate?.toIso8601String(),
+      'serviceConfirmed': serviceConfirmed,
+      'maintenancePhotos': maintenancePhotos
+          .map((photo) => photo.toList())
+          .toList(),
+    };
+  }
 }
 
 // ============================================================
@@ -410,7 +464,8 @@ class _MainNavigationState extends State<MainNavigation> {
       body: IndexedStack(index: _selectedIndex, children: pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
-        onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+        onDestinationSelected: (index) =>
+            setState(() => _selectedIndex = index),
         backgroundColor: Colors.white,
         indicatorColor: const Color(0xFFE6EFFF),
         destinations: const [
@@ -485,15 +540,17 @@ class _MainNavigationState extends State<MainNavigation> {
                 if (records.isEmpty)
                   _buildEmptySearch()
                 else
-                  ...records.take(4).map(
+                  ...records
+                      .take(4)
+                      .map(
                         (record) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: ProjectRecordCard(
-                        record: record,
-                        onTap: () => _openRecordDetails(record),
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ProjectRecordCard(
+                            record: record,
+                            onTap: () => _openRecordDetails(record),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
                 const SizedBox(height: 12),
               ]),
             ),
@@ -714,25 +771,25 @@ class _MainNavigationState extends State<MainNavigation> {
           Expanded(
             child: records.isEmpty
                 ? const Center(
-              child: Text(
-                'No service dockets found.',
-                style: TextStyle(color: idsMuted),
-              ),
-            )
+                    child: Text(
+                      'No service dockets found.',
+                      style: TextStyle(color: idsMuted),
+                    ),
+                  )
                 : ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-              itemCount: records.length,
-              itemBuilder: (context, index) {
-                final record = records[index];
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: ProjectRecordCard(
-                    record: record,
-                    onTap: () => _openRecordDetails(record),
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                    itemCount: records.length,
+                    itemBuilder: (context, index) {
+                      final record = records[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: ProjectRecordCard(
+                          record: record,
+                          onTap: () => _openRecordDetails(record),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -827,10 +884,7 @@ class IDSHeader extends StatelessWidget {
                     SizedBox(height: 4),
                     Text(
                       'Service management made simple',
-                      style: TextStyle(
-                        color: Color(0xFFD3E1F5),
-                        fontSize: 11,
-                      ),
+                      style: TextStyle(color: Color(0xFFD3E1F5), fontSize: 11),
                     ),
                   ],
                 ),
@@ -926,13 +980,13 @@ class LEDPixelPattern extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: List.generate(
         rows,
-            (_) => Padding(
+        (_) => Padding(
           padding: const EdgeInsets.only(bottom: 5),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: List.generate(
               columns,
-                  (_) => Padding(
+              (_) => Padding(
                 padding: const EdgeInsets.only(right: 5),
                 child: Container(
                   width: dotSize,
@@ -989,8 +1043,18 @@ class ProjectRecordCard extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -1030,7 +1094,9 @@ class ProjectRecordCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      record.jobSite.isEmpty ? 'Service Docket' : record.jobSite,
+                      record.jobSite.isEmpty
+                          ? 'Service Docket'
+                          : record.jobSite,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -1163,14 +1229,14 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
 
   final _clientNameController = TextEditingController();
 
-  final List<TextEditingController> _technicalTeam = [
-    TextEditingController(),
-  ];
-  final List<TextEditingController> _itTeam = [
-    TextEditingController(),
-  ];
+  final List<TextEditingController> _technicalTeam = [TextEditingController()];
+  final List<TextEditingController> _itTeam = [TextEditingController()];
 
   final List<Offset?> _signaturePoints = [];
+
+  final ImagePicker _imagePicker = ImagePicker();
+  final List<Uint8List> _maintenancePhotos = [];
+  bool _isPickingPhotos = false;
 
   String _ledType = 'Indoor LED Display';
   String _status = 'Completed';
@@ -1181,6 +1247,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
     'Workers Involved',
     'Maintenance Scope',
     'Remarks & Comments',
+    'Maintenance Photos',
     'Client Signature',
   ];
 
@@ -1189,6 +1256,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
     'Enter the names of the Technical Team and IT Team.',
     'Describe the maintenance and repair work.',
     'Document observations and outstanding issues.',
+    'Attach photos of the maintenance work.',
     'Obtain the client’s signature to confirm the service.',
   ];
 
@@ -1221,10 +1289,14 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
         permission = await Geolocator.requestPermission();
       }
       if (permission == LocationPermission.denied) {
-        throw Exception('Location permission was denied. Please allow location access.');
+        throw Exception(
+          'Location permission was denied. Please allow location access.',
+        );
       }
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permission is blocked. Enable it in your device app settings.');
+        throw Exception(
+          'Location permission is blocked. Enable it in your device app settings.',
+        );
       }
 
       final position = await Geolocator.getCurrentPosition(
@@ -1235,7 +1307,8 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       );
       final point = LatLng(position.latitude, position.longitude);
 
-      String address = '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
+      String address =
+          '${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}';
       try {
         final placemarks = await placemarkFromCoordinates(
           position.latitude,
@@ -1243,15 +1316,19 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
         );
         if (placemarks.isNotEmpty) {
           final place = placemarks.first;
-          final parts = <String?>[
-            place.name,
-            place.street,
-            place.subLocality,
-            place.locality,
-            place.postalCode,
-            place.administrativeArea,
-            place.country,
-          ].where((part) => part != null && part.trim().isNotEmpty).toSet().toList();
+          final parts =
+              <String?>[
+                    place.name,
+                    place.street,
+                    place.subLocality,
+                    place.locality,
+                    place.postalCode,
+                    place.administrativeArea,
+                    place.country,
+                  ]
+                  .where((part) => part != null && part.trim().isNotEmpty)
+                  .toSet()
+                  .toList();
           if (parts.isNotEmpty) address = parts.join(', ');
         }
       } catch (_) {
@@ -1417,7 +1494,14 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Signature Date', style: TextStyle(color: idsText, fontSize: 13, fontWeight: FontWeight.w600)),
+          const Text(
+            'Signature Date',
+            style: TextStyle(
+              color: idsText,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
           InkWell(
             onTap: _selectSignatureDate,
@@ -1425,14 +1509,23 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(color: Colors.white, border: Border.all(color: idsBorder), borderRadius: BorderRadius.circular(14)),
-              child: Row(children: [
-                const Icon(Icons.calendar_month_outlined, color: idsBlue),
-                const SizedBox(width: 12),
-                Text(_formatDate(_signatureDate), style: const TextStyle(color: idsText)),
-                const Spacer(),
-                const Icon(Icons.edit_calendar_outlined, color: idsMuted),
-              ]),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border.all(color: idsBorder),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_month_outlined, color: idsBlue),
+                  const SizedBox(width: 12),
+                  Text(
+                    _formatDate(_signatureDate),
+                    style: const TextStyle(color: idsText),
+                  ),
+                  const Spacer(),
+                  const Icon(Icons.edit_calendar_outlined, color: idsMuted),
+                ],
+              ),
             ),
           ),
         ],
@@ -1455,6 +1548,63 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
         .map((controller) => controller.text.trim())
         .where((name) => name.isNotEmpty)
         .toList();
+  }
+
+  Future<void> _takeMaintenancePhoto() async {
+    if (_isPickingPhotos) return;
+    setState(() => _isPickingPhotos = true);
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85,
+        maxWidth: 1920,
+      );
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        if (!mounted) return;
+        setState(() => _maintenancePhotos.add(bytes));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to take photo: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingPhotos = false);
+    }
+  }
+
+  Future<void> _chooseMaintenancePhotos() async {
+    if (_isPickingPhotos) return;
+    setState(() => _isPickingPhotos = true);
+    try {
+      final List<XFile> images = await _imagePicker.pickMultiImage(
+        imageQuality: 85,
+        maxWidth: 1920,
+      );
+      if (images.isNotEmpty) {
+        final newPhotos = <Uint8List>[];
+        for (final image in images) {
+          newPhotos.add(await image.readAsBytes());
+        }
+        if (!mounted) return;
+        setState(() => _maintenancePhotos.addAll(newPhotos));
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Unable to select photos: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPickingPhotos = false);
+    }
+  }
+
+  void _removeMaintenancePhoto(int index) {
+    if (index < 0 || index >= _maintenancePhotos.length) return;
+    setState(() => _maintenancePhotos.removeAt(index));
   }
 
   bool _validateCurrentStep() {
@@ -1496,7 +1646,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       return true;
     }
 
-    if (_currentStep == 4) {
+    if (_currentStep == 5) {
       if (_clientNameController.text.trim().isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please enter the client name.')),
@@ -1512,7 +1662,9 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       if (!_serviceConfirmed) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Please confirm the service completion with the client.'),
+            content: Text(
+              'Please confirm the service completion with the client.',
+            ),
           ),
         );
         return false;
@@ -1525,7 +1677,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
 
   void _nextStep() {
     if (!_validateCurrentStep()) return;
-    if (_currentStep < 4) {
+    if (_currentStep < 5) {
       setState(() => _currentStep++);
     } else {
       _saveRecord();
@@ -1572,16 +1724,29 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       observations: _observationsController.text.trim(),
       outstandingIssues: _issuesController.text.trim(),
       recommendations: _recommendationsController.text.trim(),
-      technicalTeamOtherComment: _technicalTeamOtherCommentController.text.trim(),
+      technicalTeamOtherComment: _technicalTeamOtherCommentController.text
+          .trim(),
       itTeamOtherComment: _itTeamOtherCommentController.text.trim(),
       clientName: _clientNameController.text.trim(),
       signaturePoints: List<Offset?>.from(_signaturePoints),
       signedAt: now,
       signatureDate: _signatureDate,
       serviceConfirmed: _serviceConfirmed,
+      maintenancePhotos: List<Uint8List>.from(_maintenancePhotos),
     );
 
-    Navigator.pop(context, record);
+    // Keep this form page alive underneath the preview. If the user goes
+    // back, all controllers and checklist values remain in memory.
+    Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ServiceDocketPreviewPage(record: record),
+      ),
+    ).then((confirmed) {
+      if (confirmed == true && mounted) {
+        Navigator.pop(context, record);
+      }
+    });
   }
 
   Widget _sectionHeading(String title, String description) {
@@ -1609,13 +1774,13 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
   }
 
   Widget _field(
-      String label,
-      TextEditingController controller, {
-        String? hint,
-        String? Function(String?)? validator,
-        int maxLines = 1,
-        TextInputType keyboardType = TextInputType.text,
-      }) {
+    String label,
+    TextEditingController controller, {
+    String? hint,
+    String? Function(String?)? validator,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 17),
       child: Column(
@@ -1643,11 +1808,11 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
   }
 
   Widget _dropdown(
-      String label,
-      String value,
-      List<String> options,
-      ValueChanged<String?> onChanged,
-      ) {
+    String label,
+    String value,
+    List<String> options,
+    ValueChanged<String?> onChanged,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 17),
       child: Column(
@@ -1669,10 +1834,10 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
             items: options
                 .map(
                   (option) => DropdownMenuItem(
-                value: option,
-                child: Text(option, overflow: TextOverflow.ellipsis),
-              ),
-            )
+                    value: option,
+                    child: Text(option, overflow: TextOverflow.ellipsis),
+                  ),
+                )
                 .toList(),
             onChanged: onChanged,
           ),
@@ -1707,14 +1872,16 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
             onPressed: _isDetectingLocation ? null : _detectCurrentLocation,
             icon: _isDetectingLocation
                 ? const SizedBox(
-              width: 18,
-              height: 18,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.my_location),
-            label: Text(_isDetectingLocation
-                ? 'Detecting current GPS location...'
-                : 'Use My Current GPS Location'),
+            label: Text(
+              _isDetectingLocation
+                  ? 'Detecting current GPS location...'
+                  : 'Use My Current GPS Location',
+            ),
           ),
         ),
         if (_locationError != null) ...[
@@ -1748,7 +1915,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                     _selectedLocationPoint = point;
                     if (_locationController.text.trim().isEmpty) {
                       _locationController.text =
-                      'Map point: ${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}';
+                          'Map point: ${point.latitude.toStringAsFixed(6)}, ${point.longitude.toStringAsFixed(6)}';
                     }
                   });
                 },
@@ -1796,7 +1963,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
             'Emergency Support',
             'Others',
           ],
-              (value) {
+          (value) {
             if (value != null) setState(() => _serviceType = value);
           },
         ),
@@ -1982,7 +2149,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
           values: _maintenanceChecklist[_ledEquipmentTitle]!,
           onChanged: (index) => setState(() {
             _maintenanceChecklist[_ledEquipmentTitle]![index] =
-            !_maintenanceChecklist[_ledEquipmentTitle]![index];
+                !_maintenanceChecklist[_ledEquipmentTitle]![index];
           }),
         ),
         _buildChecklistArea(
@@ -1991,7 +2158,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
           values: _maintenanceChecklist[_controlSystemTitle]!,
           onChanged: (index) => setState(() {
             _maintenanceChecklist[_controlSystemTitle]![index] =
-            !_maintenanceChecklist[_controlSystemTitle]![index];
+                !_maintenanceChecklist[_controlSystemTitle]![index];
           }),
         ),
         _buildChecklistArea(
@@ -2000,7 +2167,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
           values: _maintenanceChecklist[_electricalSystemTitle]!,
           onChanged: (index) => setState(() {
             _maintenanceChecklist[_electricalSystemTitle]![index] =
-            !_maintenanceChecklist[_electricalSystemTitle]![index];
+                !_maintenanceChecklist[_electricalSystemTitle]![index];
           }),
         ),
         _buildChecklistArea(
@@ -2009,7 +2176,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
           values: _maintenanceChecklist[_aircondSystemTitle]!,
           onChanged: (index) => setState(() {
             _maintenanceChecklist[_aircondSystemTitle]![index] =
-            !_maintenanceChecklist[_aircondSystemTitle]![index];
+                !_maintenanceChecklist[_aircondSystemTitle]![index];
           }),
         ),
         _buildChecklistArea(
@@ -2018,7 +2185,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
           values: _maintenanceChecklist[_housekeepingTitle]!,
           onChanged: (index) => setState(() {
             _maintenanceChecklist[_housekeepingTitle]![index] =
-            !_maintenanceChecklist[_housekeepingTitle]![index];
+                !_maintenanceChecklist[_housekeepingTitle]![index];
           }),
         ),
         Container(
@@ -2045,13 +2212,17 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                 '1st Reading (V)',
                 _voltageReading1Controller,
                 hint: 'Enter first voltage reading',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
               _field(
                 '2nd Reading (V)',
                 _voltageReading2Controller,
                 hint: 'Enter second voltage reading',
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
               ),
             ],
           ),
@@ -2086,13 +2257,192 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
   }
 
   // STEP 5: CLIENT SIGNATURE
-  Widget _buildSignature() {
+  // STEP 5: MAINTENANCE PHOTOS
+  Widget _buildMaintenancePhotos() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _sectionHeading(_stepTitles[4], _stepDescriptions[4]),
+        Container(
+          padding: const EdgeInsets.all(15),
+          decoration: BoxDecoration(
+            color: const Color(0xFFEFF5FF),
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: const Color(0xFFD8E6FA)),
+          ),
+          child: const Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline_rounded, color: idsBlue),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Attach clear photos showing the maintenance work, equipment condition, or replaced parts. Adding photos is optional.',
+                  style: TextStyle(color: idsText, fontSize: 12, height: 1.5),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isPickingPhotos ? null : _takeMaintenancePhoto,
+                icon: const Icon(Icons.camera_alt_outlined),
+                label: const Text('Take Photo'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: idsBlue,
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isPickingPhotos ? null : _chooseMaintenancePhotos,
+                icon: const Icon(Icons.photo_library_outlined),
+                label: const Text('Gallery'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: idsBlue,
+                  minimumSize: const Size(0, 48),
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (_isPickingPhotos) ...[
+          const SizedBox(height: 18),
+          const Center(child: CircularProgressIndicator(color: idsBlue)),
+        ],
+        const SizedBox(height: 18),
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                'Selected Photos',
+                style: TextStyle(
+                  color: idsText,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Text(
+              '${_maintenancePhotos.length} photo(s)',
+              style: const TextStyle(color: idsMuted, fontSize: 12),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (_maintenancePhotos.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 35, horizontal: 20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: idsBorder, style: BorderStyle.solid),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: const Column(
+              children: [
+                Icon(Icons.add_a_photo_outlined, color: idsMuted, size: 38),
+                SizedBox(height: 10),
+                Text(
+                  'No maintenance photos added',
+                  style: TextStyle(color: idsText, fontWeight: FontWeight.w600),
+                ),
+                SizedBox(height: 5),
+                Text(
+                  'Use the camera or choose photos from your gallery.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: idsMuted, fontSize: 12),
+                ),
+              ],
+            ),
+          )
+        else
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: _maintenancePhotos.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 0.88,
+            ),
+            itemBuilder: (context, index) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.memory(
+                      _maintenancePhotos[index],
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    left: 7,
+                    bottom: 7,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.65),
+                        borderRadius: BorderRadius.circular(7),
+                      ),
+                      child: Text(
+                        'Photo ${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    top: 5,
+                    right: 5,
+                    child: Material(
+                      color: Colors.white,
+                      shape: const CircleBorder(),
+                      child: IconButton(
+                        visualDensity: VisualDensity.compact,
+                        tooltip: 'Remove photo',
+                        onPressed: () => _removeMaintenancePhoto(index),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.redAccent,
+                          size: 19,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+      ],
+    );
+  }
+
+  Widget _buildSignature() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeading(_stepTitles[5], _stepDescriptions[5]),
         _signatureDateField(),
-        _field('Client Name', _clientNameController, validator: _requiredValidator),
+        _field(
+          'Client Name',
+          _clientNameController,
+          validator: _requiredValidator,
+        ),
         const SizedBox(height: 4),
         const Text(
           'Client Signature',
@@ -2118,10 +2468,14 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                 Positioned.fill(
                   child: GestureDetector(
                     onPanStart: (details) {
-                      setState(() => _signaturePoints.add(details.localPosition));
+                      setState(
+                        () => _signaturePoints.add(details.localPosition),
+                      );
                     },
                     onPanUpdate: (details) {
-                      setState(() => _signaturePoints.add(details.localPosition));
+                      setState(
+                        () => _signaturePoints.add(details.localPosition),
+                      );
                     },
                     onPanEnd: (_) => setState(() => _signaturePoints.add(null)),
                     child: CustomPaint(
@@ -2212,6 +2566,8 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       case 3:
         return _buildRemarks();
       case 4:
+        return _buildMaintenancePhotos();
+      case 5:
         return _buildSignature();
       default:
         return const SizedBox.shrink();
@@ -2251,7 +2607,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                       ],
                     ),
                   ),
-                  ServiceStepHeader(currentStep: _currentStep, totalSteps: 5),
+                  ServiceStepHeader(currentStep: _currentStep, totalSteps: 6),
                 ],
               ),
             ),
@@ -2303,7 +2659,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                   else
                     const Expanded(
                       child: Text(
-                        'Step 1 of 5',
+                        'Step 1 of 6',
                         style: TextStyle(color: idsMuted, fontSize: 12),
                       ),
                     ),
@@ -2324,12 +2680,12 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _currentStep == 4 ? 'Submit Docket' : 'Next',
+                            _currentStep == 5 ? 'Submit Docket' : 'Next',
                             style: const TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(width: 8),
                           Icon(
-                            _currentStep == 4
+                            _currentStep == 5
                                 ? Icons.check_circle_outline
                                 : Icons.arrow_forward_rounded,
                             size: 19,
@@ -2382,6 +2738,7 @@ class ProjectDetailsPage extends StatelessWidget {
 
   const ProjectDetailsPage({super.key, required this.record});
 
+  // 1. Display individual information
   Widget _detail(String label, String value, IconData icon) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -2400,7 +2757,13 @@ class ProjectDetailsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(color: idsMuted, fontSize: 12)),
+                Text(
+                  label,
+                  style: const TextStyle(
+                    color: idsMuted,
+                    fontSize: 12,
+                  ),
+                ),
                 const SizedBox(height: 5),
                 Text(
                   value.isEmpty ? 'Not specified' : value,
@@ -2415,6 +2778,72 @@ class ProjectDetailsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  // 2. Display signature in full screen dialog
+  void _showSignatureFullScreen(
+    BuildContext context,
+    ProjectRecord record,
+  ) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return Dialog(
+          backgroundColor: Colors.white,
+          insetPadding: const EdgeInsets.all(16),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const Expanded(
+                      child: Text(
+                        'Client Signature',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: idsText,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(dialogContext),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 15),
+                Container(
+                  height: 250,
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    border: Border.all(color: idsBorder),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: CustomPaint(
+                    painter: _SignaturePainter(
+                      points: record.signaturePoints,
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Client: ${record.clientName}',
+                  style: const TextStyle(
+                    color: idsText,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2450,7 +2879,7 @@ class ProjectDetailsPage extends StatelessWidget {
             const Text('No names added', style: TextStyle(color: idsMuted))
           else
             ...names.asMap().entries.map(
-                  (entry) => Padding(
+              (entry) => Padding(
                 padding: const EdgeInsets.only(bottom: 7),
                 child: Row(
                   children: [
@@ -2504,8 +2933,12 @@ class ProjectDetailsPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         ...taskLabels.entries.map((area) {
-          final values = record.maintenanceChecklist[area.key] ??
-              List<bool>.filled(area.value.length, false);
+          final savedValues =
+              record.maintenanceChecklist[area.key] ?? const <bool>[];
+          final values = List<bool>.generate(
+            area.value.length,
+            (index) => index < savedValues.length && savedValues[index],
+          );
           return Container(
             margin: const EdgeInsets.only(bottom: 12),
             padding: const EdgeInsets.all(15),
@@ -2517,39 +2950,69 @@ class ProjectDetailsPage extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(area.key, style: const TextStyle(color: idsText, fontWeight: FontWeight.bold, fontSize: 14)),
-                const SizedBox(height: 8),
-                ...List.generate(area.value.length, (index) => Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 5),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        values[index] ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
-                        color: values[index] ? idsBlue : idsMuted,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 9),
-                      Expanded(child: Text(area.value[index], style: const TextStyle(color: idsText, fontSize: 13, height: 1.4))),
-                    ],
+                Text(
+                  area.key,
+                  style: const TextStyle(
+                    color: idsText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
                   ),
-                )),
+                ),
+                const SizedBox(height: 8),
+                ...List.generate(
+                  area.value.length,
+                  (index) => Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 5),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          values[index]
+                              ? Icons.check_box_rounded
+                              : Icons.check_box_outline_blank_rounded,
+                          color: values[index] ? idsBlue : idsMuted,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 9),
+                        Expanded(
+                          child: Text(
+                            area.value[index],
+                            style: const TextStyle(
+                              color: idsText,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           );
         }),
-        _detail('1st Voltage Reading (V)', record.voltageReading1, Icons.electrical_services_outlined),
-        _detail('2nd Voltage Reading (V)', record.voltageReading2, Icons.electrical_services_outlined),
+        _detail(
+          '1st Voltage Reading (V)',
+          record.voltageReading1,
+          Icons.electrical_services_outlined,
+        ),
+        _detail(
+          '2nd Voltage Reading (V)',
+          record.voltageReading2,
+          Icons.electrical_services_outlined,
+        ),
       ],
     );
   }
 
-  Widget _signaturePreview(ProjectRecord record) {
-    final hasSignature = record.signaturePoints.any((point) => point != null);
+  // Maintenance photo gallery
+  Widget _maintenancePhotosPreview(BuildContext context, ProjectRecord record) {
+    if (record.maintenancePhotos.isEmpty) return const SizedBox.shrink();
+
     return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(15),
@@ -2558,23 +3021,153 @@ class ProjectDetailsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(children: [
-            Icon(Icons.draw_outlined, color: idsBlue, size: 22),
-            SizedBox(width: 10),
-            Text('Client Signature Image', style: TextStyle(color: idsText, fontSize: 14, fontWeight: FontWeight.bold)),
-          ]),
+          Row(
+            children: [
+              const Icon(Icons.photo_library_outlined, color: idsBlue, size: 22),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Maintenance Photos',
+                  style: TextStyle(
+                    color: idsText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              Text(
+                '${record.maintenancePhotos.length} photo(s)',
+                style: const TextStyle(color: idsMuted, fontSize: 12),
+              ),
+            ],
+          ),
           const SizedBox(height: 12),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: record.maintenancePhotos.length,
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 10,
+              mainAxisSpacing: 10,
+              childAspectRatio: 0.9,
+            ),
+            itemBuilder: (context, index) {
+              return InkWell(
+                borderRadius: BorderRadius.circular(10),
+                onTap: () {
+                  showDialog(
+                    context: context,
+                    builder: (dialogContext) => Dialog(
+                      insetPadding: const EdgeInsets.all(16),
+                      child: Stack(
+                        children: [
+                          InteractiveViewer(
+                            child: Image.memory(
+                              record.maintenancePhotos[index],
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                          Positioned(
+                            top: 4,
+                            right: 4,
+                            child: IconButton.filled(
+                              onPressed: () => Navigator.pop(dialogContext),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.memory(
+                    record.maintenancePhotos[index],
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Tap a photo to view it in full screen.',
+            style: TextStyle(color: idsMuted, fontSize: 11),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 3. Signature preview section
+  Widget _signaturePreview(BuildContext context, ProjectRecord record) {
+    final hasSignature = record.signaturePoints.any((point) => point != null);
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(15),
+        border: Border.all(color: idsBorder),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.draw_outlined,
+                color: idsBlue,
+                size: 22,
+              ),
+              const SizedBox(width: 10),
+              const Expanded(
+                child: Text(
+                  'Client Signature Image',
+                  style: TextStyle(
+                    color: idsText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: 'View full screen',
+                onPressed: hasSignature
+                    ? () => _showSignatureFullScreen(context, record)
+                    : null,
+                icon: const Icon(
+                  Icons.fullscreen,
+                  color: idsBlue,
+                  size: 26,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
           Container(
-            height: 150,
+            height: 130,
             width: double.infinity,
             decoration: BoxDecoration(
               color: Colors.white,
               border: Border.all(color: idsBorder),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: hasSignature
-                ? CustomPaint(painter: _SignaturePainter(points: record.signaturePoints))
-                : const Center(child: Text('No signature image available', style: TextStyle(color: idsMuted))),
+                ? CustomPaint(
+                    painter: _SignaturePainter(
+                      points: record.signaturePoints,
+                    ),
+                    child: const SizedBox.expand(),
+                  )
+                : const Center(
+                    child: Text(
+                      'No signature available',
+                      style: TextStyle(color: idsMuted),
+                    ),
+                  ),
           ),
           const SizedBox(height: 10),
           Text(
@@ -2620,23 +3213,37 @@ class ProjectDetailsPage extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   record.companyName,
-                  style: const TextStyle(color: Color(0xFFD8E7FF), fontSize: 14),
+                  style: const TextStyle(
+                    color: Color(0xFFD8E7FF),
+                    fontSize: 14,
+                  ),
                 ),
                 const SizedBox(height: 14),
-                Text(record.id, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                Text(
+                  record.id,
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
               ],
             ),
           ),
           const SizedBox(height: 22),
           const Text(
             'Service Information',
-            style: TextStyle(color: idsText, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: idsText,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 13),
           _detail('Job Site', record.jobSite, Icons.location_on_outlined),
           _detail('Time In', record.timeIn, Icons.login_rounded),
           _detail('Time Out', record.timeOut, Icons.logout_rounded),
-          _detail('Type of Service', record.serviceType, Icons.build_circle_outlined),
+          _detail(
+            'Type of Service',
+            record.serviceType,
+            Icons.build_circle_outlined,
+          ),
           _detail(
             'Service Date',
             record.serviceDate == null
@@ -2647,11 +3254,23 @@ class ProjectDetailsPage extends StatelessWidget {
           _detail('Company', record.companyName, Icons.business_rounded),
           _detail('Location', record.location, Icons.location_on_outlined),
           if (record.locationCoordinates.isNotEmpty)
-            _detail('Map Coordinates', record.locationCoordinates, Icons.map_outlined),
+            _detail(
+              'Map Coordinates',
+              record.locationCoordinates,
+              Icons.map_outlined,
+            ),
           _detail('LED Display Type', record.ledType, Icons.tv_rounded),
           _detail('Pixel Pitch', record.pixelPitch, Icons.grid_4x4_rounded),
-          _detail('Module / Screen Dimensions', record.dimensions, Icons.aspect_ratio_rounded),
-          _detail('Controller / Sending System', record.controller, Icons.settings_input_component_rounded),
+          _detail(
+            'Module / Screen Dimensions',
+            record.dimensions,
+            Icons.aspect_ratio_rounded,
+          ),
+          _detail(
+            'Controller / Sending System',
+            record.controller,
+            Icons.settings_input_component_rounded,
+          ),
           _detail('Status', record.status, Icons.flag_outlined),
           _detail(
             'Date Added',
@@ -2662,28 +3281,69 @@ class ProjectDetailsPage extends StatelessWidget {
           const SizedBox(height: 10),
           const Text(
             'Workers Involved',
-            style: TextStyle(color: idsText, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: idsText,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
-          _teamNames('Technical Team', record.technicalTeam, Icons.engineering_outlined),
+          _teamNames(
+            'Technical Team',
+            record.technicalTeam,
+            Icons.engineering_outlined,
+          ),
           _teamNames('IT Team', record.itTeam, Icons.computer_outlined),
           const SizedBox(height: 10),
           const Text(
             'Maintenance Details',
-            style: TextStyle(color: idsText, fontSize: 18, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              color: idsText,
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           _maintenanceChecklistDetails(record),
-          _detail('Maintenance / Repair Performed', record.maintenancePerformed, Icons.handyman_outlined),
+          _detail(
+            'Maintenance / Repair Performed',
+            record.maintenancePerformed,
+            Icons.handyman_outlined,
+          ),
           _detail('Parts Replaced', record.partsReplaced, Icons.build_outlined),
-          _detail('Service Outcome', record.serviceOutcome, Icons.task_alt_rounded),
-          _detail('Observations', record.observations, Icons.visibility_outlined),
-          _detail('Outstanding Issues', record.outstandingIssues, Icons.warning_amber_rounded),
-          _detail('Recommendations', record.recommendations, Icons.tips_and_updates_outlined),
-          _detail('Technical Team - Other / Comment', record.technicalTeamOtherComment, Icons.comment_outlined),
-          _detail('IT Team - Other / Comment', record.itTeamOtherComment, Icons.comment_outlined),
+          _detail(
+            'Service Outcome',
+            record.serviceOutcome,
+            Icons.task_alt_rounded,
+          ),
+          _detail(
+            'Observations',
+            record.observations,
+            Icons.visibility_outlined,
+          ),
+          _detail(
+            'Outstanding Issues',
+            record.outstandingIssues,
+            Icons.warning_amber_rounded,
+          ),
+          _detail(
+            'Recommendations',
+            record.recommendations,
+            Icons.tips_and_updates_outlined,
+          ),
+          _detail(
+            'Technical Team - Other / Comment',
+            record.technicalTeamOtherComment,
+            Icons.comment_outlined,
+          ),
+          _detail(
+            'IT Team - Other / Comment',
+            record.itTeamOtherComment,
+            Icons.comment_outlined,
+          ),
           _detail('Client Name', record.clientName, Icons.person_outline),
-          _signaturePreview(record),
+          _maintenancePhotosPreview(context, record),
+          _signaturePreview(context, record),
           _detail(
             'Service Confirmation',
             record.serviceConfirmed ? 'Confirmed' : 'Not confirmed',
@@ -2750,14 +3410,24 @@ class SettingsPage extends StatelessWidget {
           const SizedBox(height: 18),
           const Text(
             'Settings',
-            style: TextStyle(fontSize: 27, fontWeight: FontWeight.bold, color: idsText),
+            style: TextStyle(
+              fontSize: 27,
+              fontWeight: FontWeight.bold,
+              color: idsText,
+            ),
           ),
           const SizedBox(height: 6),
-          const Text('Manage your app preferences.', style: TextStyle(color: idsMuted)),
+          const Text(
+            'Manage your app preferences.',
+            style: TextStyle(color: idsMuted),
+          ),
           const SizedBox(height: 25),
           Container(
             padding: const EdgeInsets.all(18),
-            decoration: BoxDecoration(color: idsNavy, borderRadius: BorderRadius.circular(18)),
+            decoration: BoxDecoration(
+              color: idsNavy,
+              borderRadius: BorderRadius.circular(18),
+            ),
             child: const Row(
               children: [
                 IDSLogo(size: 52),
@@ -2768,10 +3438,20 @@ class SettingsPage extends StatelessWidget {
                     children: [
                       Text(
                         'IDS Service Docket',
-                        style: TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       SizedBox(height: 5),
-                      Text('LED project management', style: TextStyle(color: Color(0xFFD8E7FF), fontSize: 12)),
+                      Text(
+                        'LED project management',
+                        style: TextStyle(
+                          color: Color(0xFFD8E7FF),
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -2785,7 +3465,9 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Account settings and preferences',
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Account settings are not configured yet.')),
+                const SnackBar(
+                  content: Text('Account settings are not configured yet.'),
+                ),
               );
             },
           ),
@@ -2795,7 +3477,9 @@ class SettingsPage extends StatelessWidget {
             subtitle: 'Uses supported phone authentication',
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Authentication is configured for app access.')),
+                const SnackBar(
+                  content: Text('Authentication is configured for app access.'),
+                ),
               );
             },
           ),
@@ -2813,6 +3497,76 @@ class SettingsPage extends StatelessWidget {
             },
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ============================================================
+// SERVICE DOCKET PDF PREVIEW
+// ============================================================
+
+// ============================================================
+// SERVICE DOCKET PDF PREVIEW
+// ============================================================
+
+class ServiceDocketPreviewPage extends StatelessWidget {
+  final ProjectRecord record;
+
+  const ServiceDocketPreviewPage({super.key, required this.record});
+
+  void _confirmDocket(BuildContext context) {
+    Navigator.pop(context, true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Preview Service Docket'),
+        leading: IconButton(
+          tooltip: 'Back to edit',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, false),
+        ),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _confirmDocket(context),
+            icon: const Icon(Icons.check_circle_outline, color: Colors.white),
+            label: const Text(
+              'Done',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
+      body: PdfPreview(
+        build: (format) => buildServiceDocketPdf(record),
+        canChangePageFormat: false,
+        canChangeOrientation: false,
+        allowPrinting: true,
+        allowSharing: true,
+        pdfFileName: '${record.id}.pdf',
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: SizedBox(
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: () => _confirmDocket(context),
+              icon: const Icon(Icons.check),
+              label: const Text('Confirm and Add Docket'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: idsBlue,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }
