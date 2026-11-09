@@ -7,10 +7,10 @@ Future<void> main() async {
   final pdf = pw.Document();
 
   // Sample information
-  String jobSite = '';
-  String timeIn = '';
-  String timeOut = '';
-  String docketNo = '0861';
+  String jobSite = 'IDS Service Centre';
+  String timeIn = '09:00 AM';
+  String timeOut = '05:00 PM';
+  String docketNo = 'TEST-0861';
 
   bool scheduleMaintenance = true;
   bool technicalSupport = false;
@@ -129,6 +129,7 @@ Future<void> main() async {
                             'Reboot control system & backup system data file.',
                           ],
                           [30, 30, 40, 40, 30],
+                          checkedItems: [true, true, false, true, true],
                         ),
 
                         maintenanceSection(
@@ -138,6 +139,7 @@ Future<void> main() async {
                             'Inspect and check lighting fixture is function properly. Replace if necessary.',
                           ],
                           [42],
+                          checkedItems: [true],
                         ),
 
                         maintenanceSection(
@@ -147,6 +149,7 @@ Future<void> main() async {
                             'Check the air-conditioner units function properly, records the temperature.',
                           ],
                           [38],
+                          checkedItems: [true],
                         ),
 
                         maintenanceSection(
@@ -156,6 +159,7 @@ Future<void> main() async {
                             'To perform general cleaning and dust off control room by vacuum.',
                           ],
                           [38],
+                          checkedItems: [true],
                         ),
                       ],
                     ),
@@ -173,7 +177,15 @@ Future<void> main() async {
                           pw.Column(
                             children: [
                               labelRow('Technician Name:'),
-                              ...List.generate(7, (i) => numberedRow(i + 1)),
+                              ...sampleNameRows([
+                                'Ahmad Rahman',
+                                'Lim Wei Jian',
+                                'Kumar',
+                                'Daniel Tan',
+                                '',
+                                '',
+                                '',
+                              ]),
                             ],
                           ),
                           190,
@@ -186,7 +198,12 @@ Future<void> main() async {
                           pw.Column(
                             children: [
                               labelRow('IT Support Name:'),
-                              ...List.generate(4, (i) => numberedRow(i + 1)),
+                              ...sampleNameRows([
+                                'Jason Lee',
+                                'Siti Aminah',
+                                '',
+                                '',
+                              ]),
                             ],
                           ),
                           130,
@@ -195,32 +212,73 @@ Future<void> main() async {
                         pw.SizedBox(height: 4),
 
                         fixedSection(
-                          'Customer',
-                          pw.Column(
-                            children: [
-                              labelRow('Company & Chop'),
-                              pw.Container(height: 90),
-                              labelRow('Customer Name:'),
-                              pw.Container(height: 38),
-                              labelRow('Date:'),
-                              pw.Container(height: 25),
-                            ],
-                          ),
-                          195,
-                        ),
+  'Customer',
+  pw.Column(
+    crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+    children: [
+      // CUSTOMER NAME
+      labelRow('Customer'),
 
-                        pw.SizedBox(height: 4),
+      pw.Container(
+        height: 30,
+        width: double.infinity,
+        alignment: pw.Alignment.centerLeft,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 3),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(
+            bottom: pw.BorderSide(width: 0.5),
+          ),
+        ),
+        child: pw.Text(
+          'Sample Name',
+          style: const pw.TextStyle(fontSize: 7),
+        ),
+      ),
 
-                        fixedSection(
-                          'Screen Power Supply Voltage',
-                          pw.Column(
-                            children: [
-                              voltageRow('1st reading'),
-                              voltageRow('2nd reading'),
-                            ],
-                          ),
-                          110,
-                        ),
+      // CUSTOMER SIGNATURE
+      labelRow('Customer Signature'),
+
+      pw.Container(
+        height: 75,
+        width: double.infinity,
+        alignment: pw.Alignment.topLeft,
+        padding: const pw.EdgeInsets.fromLTRB(3, 5, 3, 2),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(
+            bottom: pw.BorderSide(width: 0.5),
+          ),
+        ),
+        child: pw.Text(
+          'Sample Sign',
+          style: const pw.TextStyle(
+            fontSize: 7,
+            color: PdfColors.grey700,
+          ),
+        ),
+      ),
+
+      // DATE
+      labelRow('Date:'),
+
+      pw.Container(
+        height: 25,
+        width: double.infinity,
+        alignment: pw.Alignment.centerLeft,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 3),
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(
+            bottom: pw.BorderSide(width: 0.5),
+          ),
+        ),
+        child: pw.Text(
+          '09/11/2026',
+          style: const pw.TextStyle(fontSize: 6),
+        ),
+      ),
+    ],
+  ),
+  195,
+),
                       ],
                     ),
                   ),
@@ -232,9 +290,17 @@ Future<void> main() async {
                     flex: 37,
                     child: pw.Column(
                       children: [
-                        commentSection('Technical Team\nOther / Comment', 1),
+                        commentSection(
+                          'Technical Team\nOther / Comment',
+                          1,
+                          sample: 'Replaced faulty LED module at the upper-right section.\n\nDisplay brightness and cooling fans checked. System operating normally.',
+                        ),
                         pw.SizedBox(height: 5),
-                        commentSection('IT Team\nOther / Comment', 1),
+                        commentSection(
+                          'IT Team\nOther / Comment',
+                          1,
+                          sample: 'Verified internet connection and control system.\n\nBackup configuration completed successfully.',
+                        ),
                         pw.SizedBox(height: 5),
 
                         pw.Container(
@@ -467,6 +533,25 @@ pw.Widget labelRow(String title) {
   );
 }
 
+List<pw.Widget> sampleNameRows(List<String> names) {
+  return List.generate(names.length, (i) {
+    return pw.Expanded(
+      child: pw.Container(
+        width: double.infinity,
+        padding: const pw.EdgeInsets.symmetric(horizontal: 3),
+        alignment: pw.Alignment.centerLeft,
+        decoration: const pw.BoxDecoration(
+          border: pw.Border(bottom: pw.BorderSide(width: 0.5)),
+        ),
+        child: pw.Text(
+          '${i + 1}.  ${names[i]}',
+          style: const pw.TextStyle(fontSize: 5.8),
+        ),
+      ),
+    );
+  });
+}
+
 pw.Widget numberedRow(int number) {
   return pw.Expanded(
     child: pw.Container(
@@ -502,7 +587,7 @@ pw.Widget voltageRow(String title) {
 }
 
 // RIGHT COLUMN COMMENT SECTION
-pw.Widget commentSection(String title, int flex) {
+pw.Widget commentSection(String title, int flex, {String sample = ''}) {
   return pw.Expanded(
     flex: flex,
     child: pw.Container(
@@ -523,7 +608,15 @@ pw.Widget commentSection(String title, int flex) {
               style: const pw.TextStyle(fontSize: 6.5),
             ),
           ),
-          pw.Expanded(child: pw.Container()),
+          pw.Expanded(
+            child: pw.Padding(
+              padding: const pw.EdgeInsets.all(5),
+              child: pw.Text(
+                sample,
+                style: const pw.TextStyle(fontSize: 6),
+              ),
+            ),
+          ),
         ],
       ),
     ),

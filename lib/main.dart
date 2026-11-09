@@ -4,7 +4,9 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
+
 import 'dart:typed_data';
+
 import 'package:image_picker/image_picker.dart';
 
 import 'service_step_header.dart';
@@ -253,7 +255,7 @@ class ProjectRecord {
   final String clientName;
   final List<Offset?> signaturePoints;
   final DateTime? signedAt;
-  final DateTime? signatureDate;
+  final DateTime signatureDate;
   final bool serviceConfirmed;
   final List<Uint8List> maintenancePhotos;
 
@@ -290,7 +292,7 @@ class ProjectRecord {
     this.clientName = '',
     this.signaturePoints = const [],
     this.signedAt,
-    this.signatureDate,
+    required this.signatureDate,
     this.serviceConfirmed = false,
     this.maintenancePhotos = const [],
   });
@@ -332,7 +334,7 @@ class ProjectRecord {
         return {'x': point.dx, 'y': point.dy};
       }).toList(),
       'signedAt': signedAt?.toIso8601String(),
-      'signatureDate': signatureDate?.toIso8601String(),
+      'signatureDate': signatureDate.toIso8601String(),
       'serviceConfirmed': serviceConfirmed,
       'maintenancePhotos': maintenancePhotos
           .map((photo) => photo.toList())
@@ -367,6 +369,7 @@ class _MainNavigationState extends State<MainNavigation> {
       controller: 'NovaStar',
       status: 'In Progress',
       dateAdded: DateTime(2026, 10, 24),
+      signatureDate: DateTime(2026, 10, 24),
       notes: 'LED module installation and configuration.',
       jobSite: 'Main Entrance',
     ),
@@ -380,6 +383,7 @@ class _MainNavigationState extends State<MainNavigation> {
       controller: 'NovaStar',
       status: 'Pending',
       dateAdded: DateTime(2026, 10, 23),
+      signatureDate: DateTime(2026, 10, 24),
       notes: 'Screen setup and display testing.',
       jobSite: 'Conference Room',
     ),
@@ -393,6 +397,7 @@ class _MainNavigationState extends State<MainNavigation> {
       controller: 'NovaStar',
       status: 'Completed',
       dateAdded: DateTime(2026, 10, 22),
+      signatureDate: DateTime(2026, 10, 24),
       notes: 'Module replacement and colour calibration.',
       jobSite: 'Outdoor Advertising Board',
     ),
@@ -406,6 +411,7 @@ class _MainNavigationState extends State<MainNavigation> {
       controller: 'NovaStar',
       status: 'In Progress',
       dateAdded: DateTime(2026, 10, 21),
+      signatureDate: DateTime(2026, 10, 24),
       notes: 'Display inspection and signal testing.',
       jobSite: 'Factory Information Display',
     ),
@@ -1566,9 +1572,9 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
       }
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Unable to take photo: $error')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Unable to take photo: $error')));
       }
     } finally {
       if (mounted) setState(() => _isPickingPhotos = false);
@@ -2676,7 +2682,7 @@ class _NewProjectRecordPageState extends State<NewProjectRecordPage> {
                           borderRadius: BorderRadius.circular(14),
                         ),
                       ),
-                
+
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
@@ -2760,10 +2766,7 @@ class ProjectDetailsPage extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: idsMuted,
-                    fontSize: 12,
-                  ),
+                  style: const TextStyle(color: idsMuted, fontSize: 12),
                 ),
                 const SizedBox(height: 5),
                 Text(
@@ -2783,10 +2786,7 @@ class ProjectDetailsPage extends StatelessWidget {
   }
 
   // 2. Display signature in full screen dialog
-  void _showSignatureFullScreen(
-    BuildContext context,
-    ProjectRecord record,
-  ) {
+  void _showSignatureFullScreen(BuildContext context, ProjectRecord record) {
     showDialog(
       context: context,
       builder: (dialogContext) {
@@ -2826,9 +2826,7 @@ class ProjectDetailsPage extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: CustomPaint(
-                    painter: _SignaturePainter(
-                      points: record.signaturePoints,
-                    ),
+                    painter: _SignaturePainter(points: record.signaturePoints),
                     child: const SizedBox.expand(),
                   ),
                 ),
@@ -3024,7 +3022,11 @@ class ProjectDetailsPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.photo_library_outlined, color: idsBlue, size: 22),
+              const Icon(
+                Icons.photo_library_outlined,
+                color: idsBlue,
+                size: 22,
+              ),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
@@ -3118,11 +3120,7 @@ class ProjectDetailsPage extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(
-                Icons.draw_outlined,
-                color: idsBlue,
-                size: 22,
-              ),
+              const Icon(Icons.draw_outlined, color: idsBlue, size: 22),
               const SizedBox(width: 10),
               const Expanded(
                 child: Text(
@@ -3139,11 +3137,7 @@ class ProjectDetailsPage extends StatelessWidget {
                 onPressed: hasSignature
                     ? () => _showSignatureFullScreen(context, record)
                     : null,
-                icon: const Icon(
-                  Icons.fullscreen,
-                  color: idsBlue,
-                  size: 26,
-                ),
+                icon: const Icon(Icons.fullscreen, color: idsBlue, size: 26),
               ),
             ],
           ),
@@ -3158,9 +3152,7 @@ class ProjectDetailsPage extends StatelessWidget {
             ),
             child: hasSignature
                 ? CustomPaint(
-                    painter: _SignaturePainter(
-                      points: record.signaturePoints,
-                    ),
+                    painter: _SignaturePainter(points: record.signaturePoints),
                     child: const SizedBox.expand(),
                   )
                 : const Center(

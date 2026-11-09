@@ -13,6 +13,7 @@ Future<Uint8List> buildServiceDocketPdf(
   String docketNo = '',
 }) async {
   final pdf = pw.Document();
+  print('PDF Signature Date: ${record.signatureDate}');
 
   // ORIGINAL MAINTENANCE CHECKLIST DATA
   const ledKey = 'Every Two Months LED Display / LCD Panel & Equipment';
@@ -23,20 +24,20 @@ Future<Uint8List> buildServiceDocketPdf(
 
   final checklistSections = <_ChecklistSection>[
     _ChecklistSection('Every Two Months', ledKey, [
-        'Inspect LED Display / LCD panels for faulty displays and rectify. Replace faulty parts if necessary.',
-        'Inspect display brightness and contrast are within the setting range.',
-        'Check cooling fan / ventilation fan blades function properly. Replace if necessary.',
-        'Check light sensor functionality. Clean the sensor surface if necessary.',
-        'Check DC power supply voltage level for health and function. Record 2 random voltage readings.',
-        'Check temperature and humidity inside the screen. Record the highest and lowest readings.',
-        'To Replace and rotate spare modules for light-up ageing purposes.',
+      'Inspect LED Display / LCD panels for faulty displays and rectify. Replace faulty parts if necessary.',
+      'Inspect display brightness and contrast are within the setting range.',
+      'Check cooling fan / ventilation fan blades function properly. Replace if necessary.',
+      'Check light sensor functionality. Clean the sensor surface if necessary.',
+      'Check DC power supply voltage level for health and function. Record 2 random voltage readings.',
+      'Check temperature and humidity inside the screen. Record the highest and lowest readings.',
+      'To Replace and rotate spare modules for light-up ageing purposes.',
     ]),
     _ChecklistSection('Control System', controlKey, [
-        'Check that the CCTV / webcam is functioning properly.',
-        'Inspect that the sending card / receiving card is functioning properly.',
-        'Check the system timer auto ON / OFF function against the preset timing.',
-        'Check internet connectivity, reboot the modem, and ensure the connection works.',
-        'Reboot the control system and back up system data files.',
+      'Check that the CCTV / webcam is functioning properly.',
+      'Inspect that the sending card / receiving card is functioning properly.',
+      'Check the system timer auto ON / OFF function against the preset timing.',
+      'Check internet connectivity, reboot the modem, and ensure the connection works.',
+      'Reboot the control system and back up system data files.',
     ]),
     _ChecklistSection('Electrical System', electricalKey, [
       'Inspect and check lighting fixture function properly. Replace if necessary.',
@@ -231,6 +232,11 @@ Future<Uint8List> buildServiceDocketPdf(
                                   horizontal: 3,
                                   vertical: 2,
                                 ),
+                                decoration: const pw.BoxDecoration(
+                                  border: pw.Border(
+                                    bottom: pw.BorderSide(width: 0.5),
+                                  ),
+                                ),
                                 child: pw.Text(
                                   record.clientName.trim().isEmpty
                                       ? ' '
@@ -247,6 +253,11 @@ Future<Uint8List> buildServiceDocketPdf(
                                 width: double.infinity,
                                 alignment: pw.Alignment.center,
                                 padding: const pw.EdgeInsets.all(2),
+                                decoration: const pw.BoxDecoration(
+                                  border: pw.Border(
+                                    bottom: pw.BorderSide(width: 0.5),
+                                  ),
+                                ),
                                 child: _signatureWidget(record.signaturePoints),
                               ),
 
@@ -259,19 +270,20 @@ Future<Uint8List> buildServiceDocketPdf(
                                 padding: const pw.EdgeInsets.symmetric(
                                   horizontal: 3,
                                 ),
-                                child: pw.Text(
-                                  _date(
-                                    record.signatureDate ?? record.serviceDate,
+                                decoration: const pw.BoxDecoration(
+                                  border: pw.Border(
+                                    bottom: pw.BorderSide(width: 0.5),
                                   ),
+                                ),
+                                child: pw.Text(
+                                  _date(record.signatureDate),
                                   style: const pw.TextStyle(fontSize: 6),
                                 ),
                               ),
                             ],
                           ),
-                          195,
+                          210,
                         ),
-
-                        pw.SizedBox(height: 4),
 
                         pw.SizedBox(height: 4),
 
@@ -893,9 +905,7 @@ String? _signatureSvg(List<Offset?> points) {
 // DATE FORMAT
 // ======================================================
 
-String _date(DateTime? date) {
-  if (date == null) return '';
-
+String _date(DateTime date) {
   return '${date.day.toString().padLeft(2, '0')}/'
       '${date.month.toString().padLeft(2, '0')}/'
       '${date.year}';
